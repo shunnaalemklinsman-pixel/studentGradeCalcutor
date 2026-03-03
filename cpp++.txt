@@ -1,0 +1,213 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
+#include <random>
+
+using namespace std;
+
+class Person {
+private:
+    string name;
+    string surname;
+    vector<int> homework;
+    int exam;
+    double finalAvg;
+    double finalMed;
+
+public:
+    // Constructor
+    Person() : exam(0), finalAvg(0.0), finalMed(0.0) {}
+
+    // Copy Constructor (Rule of Three)
+    Person(const Person& other) {
+        name = other.name;
+        surname = other.surname;
+        homework = other.homework;
+        exam = other.exam;
+        finalAvg = other.finalAvg;
+        finalMed = other.finalMed;
+    }
+
+    // Assignment Operator (Rule of Three)
+    Person& operator=(const Person& other) {
+        if (this != &other) {
+            name = other.name;
+            surname = other.surname;
+            homework = other.homework;
+            exam = other.exam;
+            finalAvg = other.finalAvg;
+            finalMed = other.finalMed;
+        }
+        return *this;
+    }
+
+    // Destructor (Rule of Three)
+    ~Person() {}
+
+    void inputData() {
+        cout << "Enter name and surname: ";
+        cin >> name >> surname;
+
+        homework.clear();
+        cout << "Enter homework results (-1 to finish): ";
+
+        int mark;
+        while (true) {
+            cin >> mark;
+            if (mark == -1) break;
+            homework.push_back(mark);
+        }
+
+        cout << "Enter exam result: ";
+        cin >> exam;
+
+        calculateFinal();
+    }
+
+    void generateRandom(int hwCount) {
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_int_distribution<> dist(1, 10);
+
+        homework.clear();
+        for (int i = 0; i < hwCount; i++)
+            homework.push_back(dist(gen));
+
+        exam = dist(gen);
+        calculateFinal();
+    }
+
+    double calculateAverage() const {
+        double sum = 0.0;
+        for (int h : homework)
+            sum += h;
+
+        return sum / homework.size();
+    }
+
+    double calculateMedian() const {
+        vector<int> temp = homework;
+        sort(temp.begin(), temp.end());
+        int size = temp.size();
+
+        if (size % 2 == 0)
+            return (temp[size / 2 - 1] + temp[size / 2]) / 2.0;
+        else
+            return temp[size / 2];
+    }
+
+    void calculateFinal() {
+        finalAvg = 0.4 * calculateAverage() + 0.6 * exam;
+        finalMed = 0.4 * calculateMedian() + 0.6 * exam;
+    }
+
+    string getName() const { return name; }
+    string getSurname() const { return surname; }
+
+    void setData(string n, string s, vector<int> hw, int ex) {
+        name = n;
+        surname = s;
+        homework = hw;
+        exam = ex;
+        calculateFinal();
+    }
+
+    void print() const {
+        cout << left << setw(12) << name
+             << setw(15) << surname
+             << right << setw(10) << fixed << setprecision(2)
+             << finalAvg << " | "
+             << setw(10) << finalMed << endl;
+    }
+};
+
+int main() {
+
+    vector<Person> students;
+    int choice;
+
+    cout << "1 - Manual input\n";
+    cout << "2 - Random generation\n";
+    cout << "3 - Read from file (Students.txt)\n";
+    cout << "Choose option: ";
+    cin >> choice;
+
+    if (choice == 1) {
+        int count;
+        cout << "Number of students: ";
+        cin >> count;
+
+        for (int i = 0; i < count; i++) {
+            Person p;
+            p.inputData();
+            students.push_back(p);
+        }
+    }
+
+    else if (choice == 2) {
+        int count;
+        cout << "Number of students: ";
+        cin >> count;
+
+        for (int i = 0; i < count; i++) {
+            Person p;
+            p.generateRandom(5);
+            students.push_back(p);
+        }
+    }
+
+    else if (choice == 3) {
+        ifstream file("Students.txt");
+
+        if (!file) {
+            cout << "File not found!\n";
+            return 1;
+        }
+
+        string line;
+        getline(file, line);
+
+        while (getline(file, line)) {
+            stringstream ss(line);
+            string name, surname;
+            ss >> name >> surname;
+
+            vector<int> numbers;
+            int value;
+
+            while (ss >> value)
+                numbers.push_back(value);
+
+            int exam = numbers.back();
+            numbers.pop_back();
+
+            Person p;
+            p.setData(name, surname, numbers, exam);
+            students.push_back(p);
+        }
+
+        file.close();
+    }
+
+    sort(students.begin(), students.end(),
+         [](const Person& a, const Person& b) {
+             return a.getName() < b.getName();
+         });
+
+    cout << "\n";
+    cout << left << setw(12) << "Name"
+         << setw(15) << "Surname"
+         << right << setw(10) << "Final(Avg)"
+         << " | "
+         << setw(10) << "Final(Med)" << endl;
+
+    cout << "------------------------------------------------------\n";
+
+    for (const auto& s : students)
+        s.print();
+
+    return 0;
+}main
